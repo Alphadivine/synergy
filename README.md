@@ -8,9 +8,13 @@ Live: https://alphadivine.github.io/synergy/
 
 - **Option A vs B** for every hero: team-up name, partner, base and enhanced effects
 - **Teammate aware**: add who's on your team and Synergy knows which team-up is enhanced
-- **Synergy score** blending win rate with your partner and how popular the pairing is, with small samples pulled toward the hero's average
-- **Filters**: Competitive / Quick Play, All ranks / Diamond+ / Grandmaster+ / Celestial+
-- **Auto season**: early in a new season it shows last season's numbers until there's enough data
+- **Win-rate gain + confidence** for each option, with small samples pulled toward the hero's average so they can't top the list
+- **Filters**: Competitive (All ranks / Diamond+ / Grandmaster+ / Celestial+) or Quick Play
+- **Auto season**: early in a new season it shows last season's numbers until your team-ups have enough games
+- **Compact view** for a second monitor: a big glanceable pick with type-ahead hero switching
+- **Squads**: save your usual teammates and load them in one tap
+- **Who to ask for**: the hero a teammate could swap to that helps your whole team most
+- Heroes in game order, grouped by role
 - **You power up**: team-ups on your team that get stronger because of your hero
 - **Copy link** to share a hero + team setup with friends
 - All 55 heroes with portraits; new heroes appear automatically
@@ -22,4 +26,4 @@ Stats come from [RivalsMeta](https://rivalsmeta.com/team-ups)'s public team-up d
 Fan-made tool, not affiliated with NetEase Games or Marvel.
 
 ---
-Last updated: November 2026 (v1.0.1)
+Last updated: November 2026 (v1.1.0)

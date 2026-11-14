@@ -63,6 +63,15 @@ window.SYNERGY_HEROES = [
   [1057, "Deadpool", "Flex", "deadpool"]
 ];
 
+// Hero order inside each role, matching the game: the launch roster first, then heroes in
+// the order they were released. Deadpool plays all three roles, so he's listed in each.
+// New heroes not listed here are added at the end of their role automatically.
+window.SYNERGY_ROLE_ORDER = {
+  Vanguard: [1022, 1018, 1027, 1011, 1037, 1042, 1039, 1035, 1051, 1053, 1056, 1065, 1057, 1062, 1066],
+  Duelist: [1026, 1033, 1021, 1024, 1052, 1034, 1029, 1030, 1045, 1048, 1014, 1038, 1036, 1032, 1043, 1015, 1041, 1049, 1040, 1017, 1054, 1044, 1055, 1057, 1059, 1061, 1063, 1067],
+  Strategist: [1046, 1025, 1047, 1016, 1031, 1020, 1023, 1050, 1028, 1058, 1057, 1060, 1064, 1068]
+};
+
 // Deadpool is one hero in the game but RivalsMeta tracks him per role.
 window.SYNERGY_HERO_ALIASES = { 10571: 1057, 10572: 1057, 10573: 1057 };
 
