@@ -26,11 +26,14 @@
       </div>
     </div>
     <div class="controls">
+      <div class="seg" id="viewSeg" role="group" aria-label="View"></div>
       <div class="seg" id="modeSeg" role="group" aria-label="Game mode"></div>
       <div class="seg" id="rankSeg" role="group" aria-label="Rank"></div>
       <div class="seg" id="seasonSeg" role="group" aria-label="Season"></div>
+      <div class="seg" id="platSeg" role="group" aria-label="Your platform (for button names)"></div>
       <button class="btn ghost" id="compactBtn" type="button" aria-pressed="false" title="A big, glanceable view for a second monitor">Compact view</button>
       <button class="btn ghost" id="shareBtn" type="button" title="Copy a link with this hero and team">Copy link</button>
+      <button class="btn ghost icon" id="helpBtn" type="button" aria-label="How to use Synergy" title="How to use Synergy">?</button>
     </div>
   </header>
 
@@ -55,8 +58,10 @@
   </footer>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
+<div class="modal" id="modal" hidden><div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalBody"><div id="modalBody"></div><div class="modal-foot"><button type="button" class="linkish" id="modalSwap"></button><button type="button" class="btn primary" id="modalClose">Got it</button></div></div></div>
 <script src="config.js"></script>
 <script src="data.js"></script>
+<script src="guides.js"></script>
 <script src="app.js"></script>
 <script>
   if ('serviceWorker' in navigator) {

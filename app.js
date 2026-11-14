@@ -3,7 +3,7 @@
    to run. Stats: RivalsMeta's public team-up data via the Synergy Worker. */
 (() => {
   'use strict';
-  const APP_VERSION = '1.1.0';
+  const APP_VERSION = '1.2.0';
   const CFG = window.SYNERGY_CONFIG || {};
   const K = CFG.SHRINK_GAMES || 150;
   const MIN_PAIR = CFG.MIN_PAIR_GAMES || 300;
@@ -18,6 +18,23 @@
   const CACHE_KEY = 'synergy.stats.v1';
   const STATE_KEY = 'synergy.state.v1';
   const SQUADS_KEY = 'synergy.squads.v1';
+  const SEEN_KEY = 'synergy.seen.v1';
+  const CONTROLS = window.SYNERGY_CONTROLS || {};
+  const GUIDES = window.SYNERGY_GUIDES || {};
+  const KEY_FIX = window.SYNERGY_KEY_FIX || {};
+  const PLATFORMS = [['pc', 'PC'], ['ps', 'PlayStation'], ['xbox', 'Xbox']];
+  // Portraits from RivalsMeta, used when a hero has no art in heroes/ (e.g. a brand-new hero).
+  const rmImg = (id, tall) => `https://rivalsmeta.com/_ipx/w_${tall ? 360 : 240}&q_80/images/heroes/OriginalSkin/img_heroportrait_${id}0010_portrait.png`;
+  const WHATS_NEW = [
+    { v: '1.2.0', items: [
+      'Hero guides: a new Guide tab for every hero with a playstyle summary, tips & combos, team-up advice and the full ability list.',
+      'PC, PlayStation or Xbox: pick your platform up top and the guide shows your buttons.',
+      'Meta tab: every hero\u2019s win rate and pick rate for your filters, plus who rose and fell since last season.',
+      'Star your mains: they get their own row at the top of the hero list.',
+      'Heroes without art in the app now borrow a portrait automatically, so new heroes have a picture on day one.',
+    ] },
+    { v: '1.1.0', items: ['Compact view, squads, who-to-ask-for, heroes in game order, clearer win-rate numbers, Quick Play ignores rank, new logo.'] },
+  ];
 
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -66,10 +83,12 @@
       return { id: Number(id), name, anchor, partner, base: '', enh: '', isNew: n === 'N' };
     });
   }
+  const KITS = new Map();      // id -> {difficulty, attack, abilities:[[key,name,text,ult]], passives:[[name,text]]}
   function applyMeta(meta) {
     if (meta && Array.isArray(meta.heroes)) {
-      for (const [rawId, name, role] of meta.heroes) {
+      for (const [rawId, name, role, difficulty, attack, abilities, passives] of meta.heroes) {
         const id = ALIAS[rawId] || rawId;
+        if (Array.isArray(abilities) && !KITS.has(id)) KITS.set(id, { difficulty: difficulty || 0, attack: attack || '', abilities, passives: passives || [] });
         if (!HEROES.has(id)) HEROES.set(id, { id, name: String(name).replace(/\s*\(.*\)$/, ''), role: ROLE_FROM_SITE[role] || 'Duelist', slug: null });
       }
     }
@@ -82,7 +101,7 @@
 
   // ---------- state ----------
   const saved = store.get(STATE_KEY) || {};
-  const state = Object.assign({ hero: 1023, mates: [], pick: 'me', mode: 'comp', rank: 'all', role: 'all', season: 'auto', compact: false, fxOpen: false }, saved, { q: '', savingSquad: false });
+  const state = Object.assign({ hero: 1023, mates: [], pick: 'me', mode: 'comp', rank: 'all', role: 'all', season: 'auto', compact: false, fxOpen: false, platform: 'pc', tab: 'teamups', view: 'pick', stars: [], metaSort: 'wr', metaRole: 'all' }, saved, { q: '', savingSquad: false });
   let squads = store.get(SQUADS_KEY) || [];
   (function readUrl() {
     const p = new URLSearchParams(location.search);
@@ -93,7 +112,7 @@
     if (t != null) state.mates = t.split(',').map((s) => map.get(s)).filter((id) => id && id !== state.hero).slice(0, 5);
     if (p.get('view') === 'compact') state.compact = true;
   })();
-  const save = () => store.set(STATE_KEY, { hero: state.hero, mates: state.mates, pick: state.pick, mode: state.mode, rank: state.rank, role: state.role, season: state.season, compact: state.compact, fxOpen: state.fxOpen });
+  const save = () => store.set(STATE_KEY, { hero: state.hero, mates: state.mates, pick: state.pick, mode: state.mode, rank: state.rank, role: state.role, season: state.season, compact: state.compact, fxOpen: state.fxOpen, platform: state.platform, tab: state.tab, view: state.view, stars: state.stars, metaSort: state.metaSort, metaRole: state.metaRole });
   // Quick Play has no ranked matchmaking, so rank filters don't apply there.
   const rankKey = () => (state.mode === 'qp' ? 'all' : state.rank);
 
@@ -208,8 +227,9 @@
     const h = HEROES.get(id);
     if (!h) return `<span class="ini r-Duelist ${cls || ''}" aria-hidden="true">?</span>`;
     const role = h.role === 'Flex' ? 'Flex' : h.role;
-    if (h.slug) return `<img class="${cls || ''}" src="heroes/${h.slug}${tall ? '-tall' : ''}.webp" alt="" loading="lazy" data-ini="${esc(initials(h))}" data-role="${esc(role)}">`;
-    return `<span class="ini r-${role} ${cls || ''}" aria-hidden="true">${esc(initials(h))}</span>`;
+    const remote = rmImg(id, tall);
+    const src = h.slug ? `heroes/${h.slug}${tall ? '-tall' : ''}.webp` : remote;
+    return `<img class="${cls || ''}" src="${src}" alt="" loading="lazy" referrerpolicy="no-referrer" data-ini="${esc(initials(h))}" data-role="${esc(role)}"${h.slug ? ` data-alt="${esc(remote)}"` : ''}>`;
   }
   const confChip = (c) => `<span class="conf c-${c.key}">${esc(c.label)}</span>`;
   const liftCls = (x) => (x == null ? '' : x >= 0 ? 'up' : 'down');
@@ -238,6 +258,9 @@
     if (s[0]) items.push(['cur', s[0].label]);
     if (s[1]) items.push(['prev', s[1].label]);
     segButtons($('seasonSeg'), items, state.season, (v) => { state.season = v; update(); });
+    segButtons($('platSeg'), PLATFORMS, state.platform, (v) => { state.platform = v; update(); });
+    segButtons($('viewSeg'), [['pick', 'Team-up picker'], ['meta', 'Meta']], state.view, (v) => { state.view = v; update(); });
+    document.body.classList.toggle('meta-view', state.view === 'meta');
     const cb = $('compactBtn');
     cb.setAttribute('aria-pressed', String(state.compact));
     cb.textContent = state.compact ? 'Full view' : 'Compact view';
@@ -252,6 +275,11 @@
   function renderStatus(choice) {
     const st = $('status');
     if (!DATA) { st.textContent = DATA_NOTE || 'Loading stats…'; return; }
+    if (state.view === 'meta') {
+      st.textContent = `${DATA.seasons[0].label} \u00b7 ${state.mode === 'comp' ? 'Competitive \u00b7 ' + RANKS[state.rank].label : 'Quick Play'} \u00b7 refreshed ${timeAgo(DATA.updated)}${DATA_NOTE ? ' \u00b7 ' + DATA_NOTE : ''}`;
+      const bm = $('banner'); bm.hidden = !DATA.stale; bm.className = 'banner'; bm.textContent = DATA.stale ? 'RivalsMeta couldn\u2019t be reached on the last refresh, so these are the most recent saved numbers.' : '';
+      return;
+    }
     const S = choice && choice.S;
     st.textContent = `${S ? S.season.label : ''} · ${state.mode === 'comp' ? 'Competitive · ' + RANKS[state.rank].label : 'Quick Play'} · refreshed ${timeAgo(DATA.updated)}${DATA_NOTE ? ' · ' + DATA_NOTE : ''}`;
     const b = $('banner');
@@ -293,6 +321,8 @@
       const hits = searchHeroes(q).filter((h) => state.role === 'all' || h.role === state.role || (ROLE_ORDER[state.role] || []).includes(h.id));
       html = hits.length ? hits.map((h) => tile(h.id, partners)).join('') : '<div class="empty">No heroes match.</div>';
     } else {
+      const starred = state.stars.filter((id) => HEROES.has(id) && (state.role === 'all' || HEROES.get(id).role === state.role || (ROLE_ORDER[state.role] || []).includes(id)));
+      if (starred.length) html += '<div class="role-head star-head">\u2605 MY HEROES</div>' + starred.map((id) => tile(id, partners)).join('');
       for (const r of (state.role === 'all' ? ROLES : [state.role])) {
         if (state.role === 'all') html += `<div class="role-head r-${r}-text">${r.toUpperCase()}S</div>`;
         html += roleList(r).map((id) => tile(id, partners)).join('');
@@ -395,15 +425,17 @@
         ${heroImg(id, 'hero-pic', true)}
         <div class="hero-meta">
           <div class="eyebrow">You are playing</div>
-          <div class="hero-name">${esc(h.name)}</div>
+          <div class="hero-name-row"><div class="hero-name">${esc(h.name)}</div><button type="button" class="star ${state.stars.includes(id) ? 'on' : ''}" data-star="${id}" aria-pressed="${state.stars.includes(id)}" aria-label="${state.stars.includes(id) ? 'Unstar' : 'Star'} ${esc(h.name)}" title="Star to pin at the top of the hero list">${state.stars.includes(id) ? '\u2605' : '\u2606'}</button></div>
           <div class="hero-sub">${esc(h.role === 'Flex' ? 'Vanguard / Duelist / Strategist' : h.role)}${ev.heroGames ? ` · ${pct(ev.heroWR)} win rate across ${fmtInt(ev.heroGames)} games` : DATA ? ' · no games recorded yet' : ''}</div>
         </div>
       </section>`;
+    const tabs = `<nav class="tabs" aria-label="Hero sections">${[['teamups', 'Team-ups'], ['guide', 'Guide']].map(([v, l]) => `<button type="button" data-tab="${v}" aria-pressed="${state.tab === v}">${l}</button>`).join('')}</nav>`;
+    if (state.tab === 'guide') return head + tabs + guideView(id, S, ev);
     let body = '';
     if (!ev.list.length) body = `<section class="panel why">No team-ups found for ${esc(h.name)} this season.</section>`;
     else body = `<section class="options">${ev.list.map((o, i) => card(o, i, o === ev.best, h)).join('')}</section><section class="panel why"><strong>Why:</strong> ${whyText(ev, h)}</section>`;
-    if (!DATA && !DATA_NOTE) body = '<div class="panel loading">Loading team-up stats…</div>';
-    return head + teamSection() + body + askSection(S, false) + boostsSection(id);
+    if (!DATA && !DATA_NOTE) body = '<div class="panel loading">Loading team-up stats\u2026</div>';
+    return head + tabs + teamSection() + body + askSection(S, false) + boostsSection(id);
   }
 
   function renderCompact(choice) {
@@ -432,13 +464,133 @@
     return top + pick + alt + teamSection() + askSection(S, true);
   }
 
+  // ---------- guide ----------
+  const CTL = () => CONTROLS[state.platform] || CONTROLS.pc || {};
+  const platName = () => (PLATFORMS.find((p) => p[0] === state.platform) || PLATFORMS[0])[1];
+  // Swap key words in text ({SPACE} in our tips; "Hold SPACE", "press F" in RivalsMeta's) for this platform's buttons.
+  function platformText(t) {
+    const c = CTL();
+    return String(t || '')
+      .replace(/\{(\w+)\}/g, (m, k) => c[k] || k)
+      .replace(/(PRESS|HOLD)\s*(LCLICK|SPACE)(?=[a-z])/g, (m, v, k) => `${v} ${c[k] || k} `)
+      .replace(/\b(PRESS|HOLD|press|hold|pressing|Press|Hold)\s*(SPACE|LCLICK|RCLICK|SHIFT|CTRL)\b/g, (m, v, k) => `${v} ${c[k] || k}`)
+      .replace(/\b(press|pressing|Press)\s+(E|F|Q|SHIFT)\b/g, (m, v, k) => `${v} ${c[k] || k}`)
+      .replace(/\bthe (E|F) key\b/g, (m, k) => `${c[k] || k}`);
+  }
+  function kitFor(id) {
+    const kit = KITS.get(id);
+    if (!kit) return null;
+    const fix = KEY_FIX[id] || {};
+    const c = CTL();
+    const abilities = [], passives = kit.passives.map(([n, t]) => ({ name: n, text: t }));
+    for (const [key, name, text] of kit.abilities) {
+      const k = fix[name] || key;
+      if (k === 'PASSIVE') { passives.push({ name, text }); continue; }
+      const ult = k === 'Q';
+      abilities.push({ name, text, ult, label: k !== 'ABILITY' && c[k] != null ? c[k] : 'Ability' });
+    }
+    abilities.sort((a, b) => a.ult - b.ult);
+    return { difficulty: kit.difficulty, attack: kit.attack, abilities, passives };
+  }
+  function guideView(id, S, ev) {
+    const h = HEROES.get(id) || { name: 'Hero', role: 'Duelist' };
+    const g = GUIDES[id];
+    const kit = kitFor(id);
+    const dots = kit && kit.difficulty ? '\u25CF'.repeat(kit.difficulty) + '\u25CB'.repeat(Math.max(0, 5 - kit.difficulty)) : '\u2014';
+    const range = kit && kit.attack ? (kit.attack === 'Melee' ? 'Melee' : 'Ranged') : '\u2014';
+    const play = `<section class="panel guide-top">
+        <div class="guide-play"><div class="eyebrow">Playstyle</div><p>${g ? esc(platformText(g.p)) : 'A written guide for this hero is coming soon. The ability list and team-up advice below are live.'}</p></div>
+        <div class="guide-facts">
+          <div class="stat"><div class="k">Role</div><div class="v r-${h.role}-text">${esc(h.role === 'Flex' ? 'Any' : h.role)}</div></div>
+          <div class="stat"><div class="k">Difficulty</div><div class="v gold">${dots}</div></div>
+          <div class="stat"><div class="k">Range</div><div class="v">${range}</div></div>
+        </div></section>`;
+    const tips = g ? `<section class="panel guide-tips"><div class="sec-head"><div class="eyebrow">Tips &amp; combos</div><div class="hint">Season 11 kit \u00b7 ${esc(platName())} buttons</div></div><ol>${g.t.map((t) => `<li>${esc(platformText(t))}</li>`).join('')}</ol></section>` : '';
+    const opts = ev.list.map((o) => `<div class="tu-row ${o === ev.best ? 'best' : ''}">${heroImg(o.tu.partner)}<div><div class="tu-row-name">${esc(o.tu.name)}</div><div class="sub">Run it with ${esc(heroName(o.tu.partner))}${o.hasData ? ` \u00b7 <span class="${liftCls(o.rawLift)}">${pts(o.rawLift)}</span> over ${fmtInt(o.m)} games` : ' \u00b7 no games yet'}</div></div></div>`).join('');
+    const ranked = ev.list.filter((o) => o.hasData).sort((a, b) => b.rank - a.rank);
+    let advice = '';
+    if (ranked.length === 2) {
+      const [a, b] = ranked;
+      advice = Math.abs(a.adjLift - b.adjLift) < 0.01 ? 'They\u2019re about even, so take whichever partner your team already has.' : `If neither partner is on your team, ask for ${esc(heroName(a.tu.partner))} first: ${esc(a.tu.name)} adds more.`;
+    } else if (ranked.length === 1) advice = `Only ${esc(ranked[0].tu.name)} has games recorded so far.`;
+    const boostList = (BY_PARTNER.get(id) || []).filter((t) => t.anchor !== id);
+    const boosts = boostList.length ? `<p class="hint">You power up: ${boostList.map((t) => `${esc(heroName(t.anchor))}\u2019s ${esc(t.name)}`).join(', ')}.</p>` : `<p class="hint">No other hero\u2019s team-up uses ${esc(h.name)} yet.</p>`;
+    const adv = `<section class="panel guide-adv"><div class="eyebrow">Team-up advice</div>${opts || '<p class="hint">No team-ups found.</p>'}${advice ? `<p>${advice}</p>` : ''}${boosts}</section>`;
+    let abil;
+    if (kit) {
+      const rows = kit.abilities.map((a) => `<div class="ab-row"><div><span class="key ${a.ult ? 'ult' : ''}">${esc(a.ult ? a.label + ' \u00b7 Ultimate' : a.label)}</span></div><div><div class="ab-name">${esc(a.name)}</div><div class="ab-text">${esc(platformText(a.text))}</div></div></div>`).join('');
+      const pas = kit.passives.map((a) => `<div class="ab-row"><div><span class="key pas">Passive</span></div><div><div class="ab-name">${esc(a.name)}</div><div class="ab-text">${esc(platformText(a.text))}</div></div></div>`).join('');
+      const dp = id === 1057 ? '<p class="hint">Deadpool\u2019s kit changes with his role; this list shows his Duelist abilities.</p>' : '';
+      abil = `<section class="panel guide-ab"><div class="sec-head"><div class="eyebrow">Abilities</div><div class="hint">Default ${esc(platName())} controls \u00b7 updated daily from RivalsMeta</div></div>${dp}${rows}${pas}</section>`;
+    } else {
+      abil = `<section class="panel guide-ab"><div class="eyebrow">Abilities</div><p class="hint">${DATA ? 'The ability list will show up once the Synergy Worker is updated (see the setup guide).' : 'Loading abilities\u2026'}</p></section>`;
+    }
+    return play + `<div class="guide-cols">${tips}${adv}</div>` + abil;
+  }
+
+  // ---------- meta ----------
+  function renderMeta() {
+    if (!DATA || !DATA.seasons) return '<div class="panel loading">Loading stats\u2026</div>';
+    const [cur, prev] = DATA.seasons;
+    const S = aggregate(cur, state.mode, rankKey());
+    const P = prev ? aggregate(prev, state.mode, rankKey()) : null;
+    let total = 0; S.h.forEach((v) => { total += v[2]; });
+    const matches = total / 12;
+    const rows = [];
+    S.h.forEach((v, id) => {
+      const h = HEROES.get(id); if (!h || !v[0]) return;
+      if (state.metaRole !== 'all' && h.role !== state.metaRole) return;
+      const wr = v[1] / v[0];
+      const pv = P ? P.h.get(id) : null;
+      const delta = pv && pv[0] >= 300 && v[0] >= 300 ? wr - pv[1] / pv[0] : null;
+      rows.push({ id, h, wr, pick: matches ? v[2] / matches : 0, games: v[2], delta });
+    });
+    const sorters = { wr: (a, b) => b.wr - a.wr, pick: (a, b) => b.pick - a.pick, delta: (a, b) => (b.delta ?? -9) - (a.delta ?? -9) };
+    rows.sort(sorters[state.metaSort] || sorters.wr);
+    const movers = rows.filter((r) => r.delta != null);
+    const up = movers.filter((r) => r.delta >= 0.0005).sort((a, b) => b.delta - a.delta).slice(0, 5);
+    const down = movers.filter((r) => r.delta <= -0.0005).sort((a, b) => a.delta - b.delta).slice(0, 5);
+    const mover = (r) => `<button type="button" class="mover" data-open="${r.id}">${heroImg(r.id)}<span>${esc(r.h.name)}</span><span class="${liftCls(r.delta)}">${pts(r.delta)}</span></button>`;
+    const sortBtn = (k, l) => `<button type="button" data-msort="${k}" aria-pressed="${state.metaSort === k}">${l}</button>`;
+    const roleBtn = (k, l) => `<button type="button" data-mrole="${k}" aria-pressed="${state.metaRole === k}">${l}</button>`;
+    const thin = matches < 2000 ? `<p class="hint">${esc(cur.label)} only has about ${fmtInt(Math.round(matches))} matches so far with these filters, so expect these to move.</p>` : '';
+    return `
+      <section class="meta-head"><div class="eyebrow">Meta \u00b7 ${esc(cur.label)} \u00b7 ${state.mode === 'comp' ? 'Competitive \u00b7 ' + RANKS[state.rank].label : 'Quick Play'}</div><div class="hero-name">Hero win rates</div></section>
+      ${thin}
+      ${P ? `<div class="movers"><section class="panel"><div class="eyebrow">Rising since ${esc(prev.label)}</div><div class="mover-list">${up.map(mover).join('') || '<span class="hint">Not enough games yet.</span>'}</div></section><section class="panel"><div class="eyebrow">Falling since ${esc(prev.label)}</div><div class="mover-list">${down.map(mover).join('') || '<span class="hint">Not enough games yet.</span>'}</div></section></div>` : ''}
+      <section class="panel meta-table">
+        <div class="meta-tools"><div class="chips">${roleBtn('all', 'All')}${ROLES.map((r) => roleBtn(r, r)).join('')}</div><div class="chips">${sortBtn('wr', 'Win rate')}${sortBtn('pick', 'Pick rate')}${P ? sortBtn('delta', 'Change') : ''}</div></div>
+        <div class="mt-row mt-headrow"><span>#</span><span>Hero</span><span>Win rate</span><span>Pick rate</span><span>${P ? 'vs ' + esc(prev.label) : ''}</span></div>
+        ${rows.map((r, i) => `<button type="button" class="mt-row" data-open="${r.id}"><span class="mt-n">${i + 1}</span><span class="mt-hero">${heroImg(r.id)}<span>${esc(r.h.name)}${state.stars.includes(r.id) ? ' <span class="gold">\u2605</span>' : ''}</span></span><span>${pct(r.wr)}</span><span>${pct(r.pick)}</span><span class="${liftCls(r.delta)}">${r.delta == null ? '' : pts(r.delta)}</span></button>`).join('')}
+        <p class="hint">Win rate leaves out mirror matches. Pick rate is the share of matches the hero appears in. Tap a hero to open them.</p>
+      </section>`;
+  }
+
+  // ---------- how-to + what's new ----------
+  function openModal(kind) {
+    const how = `<h2>How to use Synergy</h2><ol class="how">
+      <li><strong>Tap the hero you locked in.</strong> Star your mains (\u2606 next to the name) to pin them at the top of the list.</li>
+      <li><strong>Switch to Add teammates</strong> and tap who\u2019s on your team. Save your usual group as a squad.</li>
+      <li><strong>The gold card is your pick.</strong> The big number is how many win-rate points that pairing adds over your hero\u2019s average.</li>
+      <li><strong>Guide tab:</strong> playstyle, tips, team-up advice and abilities. Set PC, PlayStation or Xbox up top to see your buttons.</li>
+      <li><strong>Meta:</strong> every hero\u2019s win and pick rate, and who\u2019s rising or falling.</li>
+      <li><strong>Compact view</strong> is made for a second monitor; <strong>Copy link</strong> shares your hero and team.</li></ol>`;
+    const news = `<h2>What\u2019s new</h2>${WHATS_NEW.map((w) => `<h3>Version ${esc(w.v)}</h3><ul>${w.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`).join('')}`;
+    $('modalBody').innerHTML = kind === 'news' ? news : how;
+    $('modalSwap').textContent = kind === 'news' ? 'How to use' : 'What\u2019s new';
+    $('modalSwap').dataset.kind = kind === 'news' ? 'how' : 'news';
+    $('modal').hidden = false; $('modalClose').focus();
+    store.set(SEEN_KEY, APP_VERSION);
+  }
+  function closeModal() { $('modal').hidden = true; }
+
   function update() {
     save();
     const choice = DATA ? chooseSeason(state.hero) : null;
     renderControls();
     renderStatus(choice);
-    if (!state.compact) renderRoster();
-    $('main').innerHTML = state.compact ? renderCompact(choice) : renderFull(choice);
+    if (!state.compact && state.view !== 'meta') renderRoster();
+    $('main').innerHTML = state.view === 'meta' ? renderMeta() : state.compact ? renderCompact(choice) : renderFull(choice);
     if (state.savingSquad) { const i = $('squadName'); if (i) i.focus(); }
   }
 
@@ -465,6 +617,7 @@
   document.addEventListener('error', (e) => {
     const img = e.target;
     if (!img || img.tagName !== 'IMG' || !img.dataset.ini) return;
+    if (img.dataset.alt) { const alt = img.dataset.alt; delete img.dataset.alt; img.src = alt; return; }
     const span = document.createElement('span');
     span.className = `ini r-${img.dataset.role} ${img.className}`;
     span.setAttribute('aria-hidden', 'true');
@@ -490,6 +643,11 @@
     if (t('[data-squad-cancel]')) { state.savingSquad = false; return update(); }
     if (t('[data-squad-save]')) return saveSquad();
     if ((el = t('[data-hit]'))) return setHero(Number(el.dataset.hit));
+    if ((el = t('[data-tab]'))) { state.tab = el.dataset.tab; return update(); }
+    if ((el = t('[data-star]'))) { const sid = Number(el.dataset.star); state.stars = state.stars.includes(sid) ? state.stars.filter((x) => x !== sid) : state.stars.concat(sid); return update(); }
+    if ((el = t('[data-msort]'))) { state.metaSort = el.dataset.msort; return update(); }
+    if ((el = t('[data-mrole]'))) { state.metaRole = el.dataset.mrole; return update(); }
+    if ((el = t('[data-open]'))) { state.view = 'pick'; state.compact = false; return setHero(Number(el.dataset.open)); }
   });
   $('main').addEventListener('toggle', (e) => {
     if (e.target.classList && e.target.classList.contains('fx')) {
@@ -518,7 +676,12 @@
     }
     if (e.key === 'Escape') { e.target.value = ''; state.q = ''; renderRoster(); }
   });
-  $('compactBtn').addEventListener('click', () => { state.compact = !state.compact; update(); });
+  $('compactBtn').addEventListener('click', () => { state.compact = !state.compact; if (state.compact) state.view = 'pick'; update(); });
+  $('helpBtn').addEventListener('click', () => openModal('how'));
+  $('modalClose').addEventListener('click', closeModal);
+  $('modalSwap').addEventListener('click', (e) => openModal(e.target.dataset.kind));
+  $('modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('modal').hidden) closeModal(); });
   $('shareBtn').addEventListener('click', async () => {
     const hs = (id) => (HEROES.get(id) || {}).slug || slugify(heroName(id));
     const u = new URL(location.href.split('?')[0]);
@@ -561,4 +724,7 @@
 
   window.SYNERGY_VERSION = APP_VERSION;
   load();
+  const seen = store.get(SEEN_KEY);
+  if (!seen && !saved.hero) openModal('how');
+  else if (seen !== APP_VERSION) openModal('news');
 })();

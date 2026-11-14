@@ -14,6 +14,10 @@ Live: https://alphadivine.github.io/synergy/
 - **Compact view** for a second monitor: a big glanceable pick with type-ahead hero switching
 - **Squads**: save your usual teammates and load them in one tap
 - **Who to ask for**: the hero a teammate could swap to that helps your whole team most
+- **Hero guides**: playstyle, tips & combos, team-up advice and abilities for every hero
+- **PC, PlayStation or Xbox** button names throughout the guides
+- **Meta tab**: win rate, pick rate, and who's rising or falling since last season
+- **Star your mains** to pin them at the top
 - Heroes in game order, grouped by role
 - **You power up**: team-ups on your team that get stronger because of your hero
 - **Copy link** to share a hero + team setup with friends
@@ -26,4 +30,4 @@ Stats come from [RivalsMeta](https://rivalsmeta.com/team-ups)'s public team-up d
 Fan-made tool, not affiliated with NetEase Games or Marvel.
 
 ---
-Last updated: November 2026 (v1.1.0)
+Last updated: November 2026 (v1.2.0)

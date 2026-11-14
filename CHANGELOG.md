@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11 — v1.2.0 hero guides, platforms and Meta tab
+- New Guide tab for every hero: playstyle, role/difficulty/range, 4 tips & combos, team-up advice from live stats, and the full ability list
+- PC / PlayStation / Xbox setting: ability keys and the key words inside tips and ability text switch to that platform's default buttons
+- Ability lists load live from RivalsMeta through the Worker; known labeling errors in their data are corrected by hand (guides.js)
+- Meta tab: hero win rate and pick rate for the current filters, sortable and filterable by role, plus biggest risers and fallers since last season
+- Star heroes to pin them in a "My heroes" row at the top of the roster
+- How-to guide on first visit and a What's New popup after updates (? button reopens it)
+- Heroes without art in heroes/ fall back to RivalsMeta's portrait before initials, so new heroes get a picture on day one
+- Worker: now includes each hero's abilities, difficulty and range (cache version v2) — redeploy required
+
 ## 2026-11 — v1.1.0 compact view, squads, who-to-ask-for
 - Heroes now appear in game order: grouped by role with headers, launch roster first, then by release date (Deadpool in all three roles)
 - Quick Play ignores rank: the rank filter is turned off there since Quick Play isn't ranked
