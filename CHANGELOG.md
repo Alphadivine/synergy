@@ -10,6 +10,7 @@
 - New Compact view for a second monitor: huge PICK THIS card, the other option on one line, type-ahead hero switching (remembered; ?view=compact link)
 - Squads: save your usual teammates and load them in one tap
 - "Best hero to ask a teammate to swap to": ranks heroes by how much they'd add across your whole team
+- New logo (gold and blue chevrons locking into a hexagon) on the header, browser tab and app icons
 
 ## 2026-11 — v1.0.1 initials fallback for missing art
 - A hero portrait that fails to load now shows the hero's initials instead of an empty white box
