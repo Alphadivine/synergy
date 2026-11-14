@@ -22,4 +22,4 @@ Stats come from [RivalsMeta](https://rivalsmeta.com/team-ups)'s public team-up d
 Fan-made tool, not affiliated with NetEase Games or Marvel.
 
 ---
-Last updated: November 2026 (v1.0.0)
+Last updated: November 2026 (v1.0.1)

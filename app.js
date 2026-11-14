@@ -3,7 +3,7 @@
    to run. Stats: RivalsMeta's public team-up data via the Synergy Worker. */
 (() => {
   'use strict';
-  const APP_VERSION = '1.0.0';
+  const APP_VERSION = '1.0.1';
   const CFG = window.SYNERGY_CONFIG || {};
   const K = CFG.SHRINK_GAMES || 150;
   const MIN_GAMES = CFG.MIN_HERO_GAMES || 800;
@@ -167,8 +167,8 @@
   function heroImg(id, cls, tall) {
     const h = HEROES.get(id);
     if (!h) return `<span class="ini r-Flex ${cls || ''}" aria-hidden="true">?</span>`;
-    if (h.slug) return `<img class="${cls || ''}" src="heroes/${h.slug}${tall ? '-tall' : ''}.webp" alt="" loading="lazy">`;
     const ini = h.name.replace(/^The /, '').split(/[\s&-]+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+    if (h.slug) return `<img class="${cls || ''}" src="heroes/${h.slug}${tall ? '-tall' : ''}.webp" alt="" loading="lazy" data-ini="${esc(ini)}" data-role="${esc(h.role)}">`;
     return `<span class="ini r-${h.role} ${cls || ''}" aria-hidden="true">${esc(ini)}</span>`;
   }
   const heroName = (id) => (HEROES.get(id) || { name: 'Hero ' + id }).name;
@@ -375,6 +375,17 @@
     renderRoster();
     renderMain(choice);
   }
+
+  // A missing or broken portrait falls back to the hero's initials instead of an empty box.
+  document.addEventListener('error', (e) => {
+    const img = e.target;
+    if (!img || img.tagName !== 'IMG' || !img.dataset.ini) return;
+    const span = document.createElement('span');
+    span.className = `ini r-${img.dataset.role} ${img.className}`;
+    span.setAttribute('aria-hidden', 'true');
+    span.textContent = img.dataset.ini;
+    img.replaceWith(span);
+  }, true);
 
   // ---------- events ----------
   $('heroGrid').addEventListener('click', (e) => { const b = e.target.closest('.tile'); if (b) pickHero(Number(b.dataset.id)); });

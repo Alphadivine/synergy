@@ -1,6 +1,6 @@
 /* Synergy service worker: caches the app shell and hero art so the page opens fast.
    Stats always come fresh from the Worker (the app keeps its own saved copy). */
-const CACHE = 'synergy-v1.0.0';
+const CACHE = 'synergy-v1.0.1';
 const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'config.js', 'data.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {

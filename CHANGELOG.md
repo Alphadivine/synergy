@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11 — v1.0.1 initials fallback for missing art
+- A hero portrait that fails to load now shows the hero's initials instead of an empty white box
+- Service worker cache bumped so the update shows up right away
+
 ## 2026-11 — v1.0.0 first release
 - Pick your hero and teammates; see both team-up options with stats and a PICK THIS recommendation
 - Stats from RivalsMeta's public team-up data via the `synergy-api` Cloudflare Worker (12-hour cache, 2-week backup copy)
