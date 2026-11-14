@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synergy — Marvel Rivals team-up picker</title>
+<meta name="description" content="Pick your Marvel Rivals hero, add your teammates, and see which of your two team-ups to run, based on real match stats.">
+<meta name="theme-color" content="#0E1116">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <img class="logo" src="icon-192.png" alt="" width="44" height="44">
+      <div>
+        <h1>SYNERGY</h1>
+        <p class="status" id="status">Loading stats…</p>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="seg" id="modeSeg" role="group" aria-label="Game mode"></div>
+      <div class="seg" id="rankSeg" role="group" aria-label="Rank"></div>
+      <div class="seg" id="seasonSeg" role="group" aria-label="Season"></div>
+      <button class="btn ghost" id="shareBtn" type="button" title="Copy a link with this hero and team">Copy link</button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <div class="layout">
+    <aside class="panel roster" aria-label="Hero roster">
+      <div class="seg full" id="pickSeg" role="group" aria-label="What tapping a hero does"></div>
+      <p class="hint" id="pickHint"></p>
+      <label class="sr" for="search">Search heroes</label>
+      <input id="search" type="search" placeholder="Search heroes…" autocomplete="off">
+      <div class="chips" id="roleChips" role="group" aria-label="Filter by role"></div>
+      <div class="grid-scroll"><div class="hero-grid" id="heroGrid"></div></div>
+    </aside>
+
+    <main class="main" id="main" aria-live="polite"></main>
+  </div>
+
+  <footer class="foot">
+    <span>Stats from <a id="srcLink" href="https://rivalsmeta.com/team-ups" target="_blank" rel="noopener">RivalsMeta</a> (public team-up data, refreshed about twice a day).</span>
+    <span>Fan-made tool, not affiliated with NetEase or Marvel.</span>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="config.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
+</body>
+</html>
